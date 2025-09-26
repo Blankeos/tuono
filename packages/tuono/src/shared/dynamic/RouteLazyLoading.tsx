@@ -1,11 +1,13 @@
-import { lazy, createElement } from 'react'
-import type { ReactElement } from 'react'
+import { lazy, type Component, type ComponentProps } from 'solid-js'
 
-import type { RouteComponent } from 'tuono-router'
-
+// Assuming RouteComponent is a SolidJS component type
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RouteComponent = Component<any>
 type ImportFn = () => Promise<{ default: RouteComponent }>
 
-export const RouteLazyLoading = (factory: ImportFn): RouteComponent => {
+export const RouteLazyLoading = (
+  factory: ImportFn,
+): RouteComponent & { preload: () => Promise<void> } => {
   let LoadedComponent: RouteComponent | undefined
   const LazyComponent = lazy<RouteComponent>(factory)
 
@@ -14,11 +16,16 @@ export const RouteLazyLoading = (factory: ImportFn): RouteComponent => {
       LoadedComponent = module.default
     })
 
-  const Component = (
-    props: React.ComponentProps<RouteComponent>,
-  ): ReactElement => createElement(LoadedComponent || LazyComponent, props)
+  const _Component: RouteComponent = (
+    props: ComponentProps<RouteComponent>,
+  ) => {
+    const ComponentToRender = LoadedComponent || LazyComponent
+    return ComponentToRender(props)
+  }
 
-  Component.preload = loadComponent
+  // Add preload method to the component
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+  ;(_Component as any).preload = loadComponent
 
-  return Component
+  return _Component as RouteComponent & { preload: () => Promise<void> }
 }

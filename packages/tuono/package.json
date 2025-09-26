@@ -1,7 +1,7 @@
 {
   "name": "tuono",
   "version": "0.19.7",
-  "description": "Superfast React fullstack framework",
+  "description": "Superfast SolidJS fullstack framework",
   "homepage": "https://tuono.dev",
   "scripts": {
     "dev": "vite build --watch",
@@ -61,17 +61,16 @@
     "bin/**"
   ],
   "peerDependencies": {
-    "react": ">=19.0.0",
-    "react-dom": ">=19.0.0"
+    "solid-js": ">=1.9.9"
   },
   "dependencies": {
     "@babel/core": "^7.24.4",
     "@babel/plugin-syntax-jsx": "^7.24.1",
     "@babel/plugin-syntax-typescript": "^7.24.1",
     "@rollup/plugin-inject": "^5.0.5",
-    "@vitejs/plugin-react-swc": "^3.8.0",
+    "vite-plugin-solid": "^2.11.8",
     "fast-text-encoding": "^1.0.6",
-    "tuono-react-vite-plugin": "workspace:*",
+    "tuono-vite-plugin": "workspace:*",
     "tuono-router": "workspace:*",
     "url-search-params-polyfill": "^8.2.5",
     "vite": "^6.1.1",
@@ -81,16 +80,13 @@
     "@types/babel__core": "7.20.5",
     "@types/babel__traverse": "7.20.7",
     "@types/node": "22.16.5",
-    "@types/react": "19.1.8",
-    "@types/react-dom": "19.1.6",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "solid-js": "1.9.9",
     "vite-config": "workspace:*",
     "vitest": "3.2.4"
   },
   "sideEffects": false,
   "keywords": [
-    "react",
+    "solidjs",
     "typescript",
     "fullstack",
     "framework",

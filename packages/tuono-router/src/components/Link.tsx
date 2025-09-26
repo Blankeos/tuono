@@ -1,10 +1,15 @@
-import type { JSX, MouseEvent } from 'react'
-import { useInView } from 'react-intersection-observer'
+import type { JSX } from 'solid-js'
+import {
+  createSignal,
+  mergeProps,
+  onCleanup,
+  onMount,
+  splitProps,
+} from 'solid-js'
 
 import { useRouter } from '../hooks/useRouter'
-import { useRoute } from '../hooks/useRoute'
 
-interface TuonoLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+interface TuonoLinkProps extends JSX.AnchorHTMLAttributes<HTMLAnchorElement> {
   /**
    * If "true" the route gets loaded when the link enters the viewport.
    * @default true
@@ -25,7 +30,7 @@ interface TuonoLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
 }
 
 function isEventModifierKeyActiveAndTargetDifferentFromSelf(
-  event: MouseEvent<HTMLAnchorElement>,
+  event: MouseEvent & { currentTarget: HTMLAnchorElement },
 ): boolean {
   const target = event.currentTarget.getAttribute('target')
   return (
@@ -37,33 +42,67 @@ function isEventModifierKeyActiveAndTargetDifferentFromSelf(
   )
 }
 
-export function Link(componentProps: TuonoLinkProps): JSX.Element {
-  const {
-    preload = true,
-    scroll = true,
-    children,
-    href,
-    replace,
-    onClick,
-    ...rest
-  } = componentProps
+export function Link(rawProps: TuonoLinkProps): JSX.Element {
+  const [ref, setRef] = createSignal<HTMLAnchorElement>()
+  const [hasBeenInView, setHasBeenInView] = createSignal(false)
+
+  // const {
+  //   preload = true,
+  //   scroll = true,
+  //   children,
+  //   href,
+  //   replace,
+  //   onClick,
+  //   ...rest
+  // } = rawProps
+
+  const props = mergeProps({ preload: true, scroll: true }, rawProps)
+  const [local, rest] = splitProps(props, [
+    'preload',
+    'scroll',
+    'children',
+    'href',
+    'replace',
+    'onClick',
+  ])
 
   const router = useRouter()
-  const route = useRoute(href)
-  const { ref } = useInView({
-    onChange(inView) {
-      if (inView && preload) route?.component.preload()
-    },
-    triggerOnce: true,
+  // const route = useRoute(local.href)
+
+  onMount(() => {
+    if (!local.preload) return
+
+    const element = ref()
+    if (!element) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !hasBeenInView()) {
+            setHasBeenInView(true)
+            // route?.component.preload
+            observer.disconnect()
+          }
+        })
+      },
+      { threshold: 0 },
+    )
+
+    observer.observe(element)
+
+    onCleanup(() => {
+      observer.disconnect()
+    })
   })
 
-  const handleTransition: React.MouseEventHandler<HTMLAnchorElement> = (
+  const handleTransition: JSX.EventHandler<HTMLAnchorElement, MouseEvent> = (
     event,
   ) => {
-    onClick?.(event)
+    // @ts-expect-error valid reason dont worry
+    local.onClick?.(event)
 
     if (
-      href?.startsWith('#') ||
+      local.href?.startsWith('#') ||
       // If the user is pressing a modifier key or using the target attribute,
       // we fall back to default behaviour of `a` tag
       isEventModifierKeyActiveAndTargetDifferentFromSelf(event)
@@ -73,14 +112,14 @@ export function Link(componentProps: TuonoLinkProps): JSX.Element {
 
     event.preventDefault()
 
-    const method = replace ? 'replace' : 'push'
+    const method = local.replace ? 'replace' : 'push'
 
-    router[method](href || '', { scroll })
+    router[method](local.href || '', { scroll: local.scroll })
   }
 
   return (
-    <a {...rest} href={href} ref={ref} onClick={handleTransition}>
-      {children}
+    <a {...rest} href={local.href} ref={setRef} onClick={handleTransition}>
+      {local.children}
     </a>
   )
 }

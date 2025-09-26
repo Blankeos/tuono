@@ -1,4 +1,4 @@
-import type { JSX } from 'react'
+import { type JSX } from 'solid-js'
 
 import { SERVER_PAYLOAD_VARIABLE_NAME } from '../constants'
 
@@ -12,13 +12,18 @@ export function TuonoScripts(): JSX.Element {
   return (
     <>
       <script>{`window['${SERVER_PAYLOAD_VARIABLE_NAME}']=${JSON.stringify(serverPayload)}`}</script>
-      {serverPayload.mode === 'Dev' && (
-        <DevResources devServerConfig={serverPayload.devServerConfig} />
+      {serverPayload().mode === 'Dev' && (
+        <DevResources
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+          devServerConfig={(serverPayload() as any).devServerConfig}
+        />
       )}
-      {serverPayload.mode === 'Prod' && (
+      {serverPayload().mode === 'Prod' && (
         <ProdResources
-          jsBundles={serverPayload.jsBundles}
-          cssBundles={serverPayload.cssBundles}
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+          jsBundles={(serverPayload() as any).jsBundles}
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+          cssBundles={(serverPayload() as any).cssBundles}
         />
       )}
     </>

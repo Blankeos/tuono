@@ -11,7 +11,7 @@ const ROUTES_DIRECTORY_PATH = './src/routes'
 
 let lock = false
 
-export function TuonoReactPlugin(): Plugin {
+export function TuonoPlugin(): Plugin {
   const generate = async (): Promise<void> => {
     if (lock) return
     lock = true
@@ -38,7 +38,7 @@ export function TuonoReactPlugin(): Plugin {
   const cssModulesManifest: Record<string, string> = {}
 
   return {
-    name: 'vite-plugin-tuono-react',
+    name: 'vite-plugin-tuono',
     configResolved: async (): Promise<void> => {
       await generate()
     },

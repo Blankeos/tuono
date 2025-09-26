@@ -2,29 +2,32 @@
  * This component is heavily inspired by Next.js dynamic function
  * Link: https://github.com/vercel/next.js/blob/1df81bcea62800198884438a2bb27ba14c9d506a/packages/next/src/shared/lib/dynamic.tsx
  */
-import { lazy, Suspense, Fragment } from 'react'
-import type { ComponentType } from 'react'
+import {
+  Suspense,
+  lazy,
+  type Component,
+  type FlowProps,
+  type JSX,
+} from 'solid-js'
 
 const isServerSide = typeof window === 'undefined'
 
 interface ComponentModule<T> {
-  default: React.ComponentType<T>
+  default: Component<T>
 }
 
 interface DynamicOptions {
   ssr?: boolean
-  loading?: React.ComponentType<unknown> | null
+  loading?: Component<unknown> | null
 }
 
-type Loader<T = object> = () => Promise<
-  React.ComponentType<T> | ComponentModule<T>
->
+type Loader<T = object> = () => Promise<Component<T> | ComponentModule<T>>
 
 interface LoadableOptions<T> extends DynamicOptions {
   loader: Loader<T>
 }
 
-type LoadableFn = <T = object>(options: LoadableOptions<T>) => ComponentType<T>
+type LoadableFn = <T = object>(options: LoadableOptions<T>) => Component<T>
 
 const defaultLoaderOptions: LoadableOptions<object> = {
   ssr: true,
@@ -35,7 +38,7 @@ const defaultLoaderOptions: LoadableOptions<object> = {
 function noSSR<T = object>(
   LoadableInitializer: LoadableFn,
   loadableOptions: LoadableOptions<T>,
-): React.ComponentType<T> {
+): Component<T> {
   if (!isServerSide) {
     return LoadableInitializer(loadableOptions)
   }
@@ -44,21 +47,26 @@ function noSSR<T = object>(
 
   const Loading = loadableOptions.loading
   // This will only be rendered on the server side
-  function NoSSRLoading(): React.JSX.Element {
+  function NoSSRLoading(): JSX.Element {
     return <Loading />
   }
   return NoSSRLoading
 }
 
-function Loadable<T = object>(options: LoadableOptions<T>): ComponentType<T> {
+function Loadable<T = object>(options: LoadableOptions<T>): Component<T> {
   const opts = { ...defaultLoaderOptions, ...options }
   const Lazy = lazy(() => opts.loader().then())
   const Loading = opts.loading
 
-  function LoadableComponent(props: T): React.JSX.Element {
+  function LoadableComponent(props: T): JSX.Element {
     const fallbackElement = Loading ? <Loading /> : null
 
-    const Wrap = Loading ? Suspense : Fragment
+    const Wrap = Loading
+      ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+        (_props: FlowProps) => <Suspense>{_props.children}</Suspense>
+      : // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+        (_props: FlowProps) => <>{_props.children}</>
+
     const wrapProps = Loading ? { fallback: fallbackElement } : {}
 
     // TODO: In case ssr = false handle also the assets preloading
@@ -80,7 +88,7 @@ function Loadable<T = object>(options: LoadableOptions<T>): ComponentType<T> {
 export function dynamic<T = object>(
   importFn: Loader<T>,
   opts?: DynamicOptions,
-): ComponentType<T> {
+): Component<T> {
   if (typeof opts?.ssr === 'boolean' && !opts.ssr) {
     return noSSR<T>(Loadable, { ...opts, loader: importFn })
   }

@@ -1,12 +1,11 @@
+import type { JSX } from 'solid-js'
 import {
   createContext,
-  useState,
-  useEffect,
+  createSignal,
+  onCleanup,
+  onMount,
   useContext,
-  useMemo,
-  useCallback,
-} from 'react'
-import type { ReactNode } from 'react'
+} from 'solid-js'
 
 import type { Router } from '../router'
 import type { ServerInitialLocation } from '../types'
@@ -23,13 +22,13 @@ export interface ParsedLocation {
 
 interface RouterContextValue {
   router: Router
-  location: ParsedLocation
-  isTransitioning: boolean
+  location: () => ParsedLocation
+  isTransitioning: () => boolean
   updateLocation: (loc: ParsedLocation) => void
   stopTransitioning: () => void
 }
 
-const RouterContext = createContext({} as RouterContextValue)
+const RouterContext = createContext<RouterContextValue>()
 
 function getInitialLocation(
   serverPayloadLocation: ServerInitialLocation,
@@ -59,28 +58,28 @@ function getInitialLocation(
 interface RouterContextProviderProps {
   router: Router
   serverInitialLocation: ServerInitialLocation
-  children: ReactNode
+  children: JSX.Element
 }
 
-export function RouterContextProvider({
-  router,
-  serverInitialLocation,
-  children,
-}: RouterContextProviderProps): ReactNode {
+export function RouterContextProvider(
+  props: RouterContextProviderProps,
+): JSX.Element {
   // Allow the router to update options on the router instance
-  router.update({ ...router.options } as Parameters<typeof router.update>[0])
+  props.router.update({ ...props.router.options } as Parameters<
+    typeof props.router.update
+  >[0])
 
-  const [location, setLocation] = useState<ParsedLocation>(() =>
-    getInitialLocation(serverInitialLocation),
+  const [location, setLocation] = createSignal<ParsedLocation>(
+    getInitialLocation(props.serverInitialLocation),
   )
   // Global state to track whether a page transition is in progress.
   // Set to `false` once the page is fully loaded, including server-side data.
-  const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
+  const [isTransitioning, setIsTransitioning] = createSignal<boolean>(false)
 
   /**
    * Listen browser navigation events
    */
-  useEffect(() => {
+  onMount(() => {
     const updateLocationOnPopStateChange = ({
       target,
     }: PopStateEvent): void => {
@@ -98,34 +97,41 @@ export function RouterContextProvider({
 
     window.addEventListener('popstate', updateLocationOnPopStateChange)
 
-    return (): void => {
+    onCleanup(() => {
       window.removeEventListener('popstate', updateLocationOnPopStateChange)
-    }
-  }, [])
+    })
+  })
 
-  const updateLocation = useCallback((newLocation: ParsedLocation): void => {
+  const updateLocation = (newLocation: ParsedLocation): void => {
     setIsTransitioning(true)
     setLocation(newLocation)
-  }, [])
+  }
 
-  const stopTransitioning = useCallback((): void => {
+  const stopTransitioning = (): void => {
     setIsTransitioning(false)
-  }, [])
+  }
 
-  const contextValue: RouterContextValue = useMemo(
-    () => ({
-      router,
-      location,
-      isTransitioning,
-      updateLocation,
-      stopTransitioning,
-    }),
-    [location, router, isTransitioning, updateLocation, stopTransitioning],
-  )
+  const contextValue: RouterContextValue = {
+    get router() {
+      return props.router
+    },
+    get location() {
+      return location
+    },
+    get isTransitioning() {
+      return isTransitioning
+    },
+    get updateLocation() {
+      return updateLocation
+    },
+    get stopTransitioning() {
+      return stopTransitioning
+    },
+  }
 
   return (
     <RouterContext.Provider value={contextValue}>
-      {children}
+      {props.children}
     </RouterContext.Provider>
   )
 }
@@ -134,5 +140,11 @@ export function RouterContextProvider({
  * @warning THIS SHOULD NOT BE EXPOSED TO USERLAND
  */
 export function useRouterContext(): RouterContextValue {
-  return useContext(RouterContext)
+  const context = useContext(RouterContext)
+  if (!context) {
+    throw new Error(
+      'useRouterContext must be used within a RouterContextProvider',
+    )
+  }
+  return context
 }

@@ -1,4 +1,4 @@
-import type { ReactNode, ComponentType } from 'react'
+import type { Component, JSX } from 'solid-js'
 
 export type Mode = 'Dev' | 'Prod'
 
@@ -22,9 +22,9 @@ export interface RouteProps<TData = unknown> {
 
   isLoading: boolean
 
-  children?: ReactNode
+  children?: JSX.Element
 }
 
-export type RouteComponent = ComponentType<RouteProps> & {
+export type RouteComponent = Component<RouteProps> & {
   preload: () => void
 }
