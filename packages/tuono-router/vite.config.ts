@@ -1,12 +1,14 @@
 /// <reference types="vitest" />
 /// <reference types="vite/client" />
-import { defineConfig, mergeConfig } from 'vitest/config'
 import { defineViteConfig } from 'vite-config'
-import react from '@vitejs/plugin-react-swc'
+import solid from 'vite-plugin-solid'
+import { defineConfig, mergeConfig } from 'vitest/config'
 
 export default mergeConfig(
   defineConfig({
-    plugins: [react()],
+    plugins: [solid(
+      // { solid: { hydratable: true }, ssr: true }
+    )],
     test: {
       name: 'tuono-router',
       environment: 'happy-dom',

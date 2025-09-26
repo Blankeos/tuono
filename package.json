@@ -20,7 +20,8 @@
     "repo:root:format:fix": "prettier . !./assets !./crates !./examples !./devtools !./packages --write",
     "check-packages": "turbo build test lint format typecheck --filter=!./examples",
     "check-examples": "pnpm run \"/^examples:(format|typecheck)$/\"",
-    "check-all": "pnpm run check-packages && pnpm run check-examples && pnpm run repo:root:format"
+    "check-all": "pnpm run check-packages && pnpm run check-examples && pnpm run repo:root:format",
+    "cleanmod": "rm -rf node_modules packages/**/node_modules examples/**/node_modules devtools/**/node_modules e2e/fixtures/**/node_modules"
   },
   "author": "Valerio Ageno",
   "license": "MIT",

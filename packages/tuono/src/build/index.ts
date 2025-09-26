@@ -1,16 +1,16 @@
+import inject from '@rollup/plugin-inject'
+import { TuonoPlugin } from 'tuono-vite-plugin'
 import type { InlineConfig, Plugin } from 'vite'
 import { build, createServer, mergeConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
-import inject from '@rollup/plugin-inject'
-import { TuonoReactPlugin } from 'tuono-react-vite-plugin'
+import solid from 'vite-plugin-solid'
 
 import type { TuonoConfig } from '../config'
 
 import { ErrorOverlayVitePlugin } from './error-overlay'
 
-import { blockingAsync } from './utils'
 import { createJsonConfig, loadConfig } from './config'
 import { ENV_PREFIX } from './constants'
+import { blockingAsync } from './utils'
 
 const VITE_SSR_PLUGINS: Array<Plugin> = [
   {
@@ -19,7 +19,7 @@ const VITE_SSR_PLUGINS: Array<Plugin> = [
       ReadableStream: ['web-streams-polyfill', 'ReadableStream'],
 
       /**
-       * Added to support `react@19`
+       * Added to support `solid-js@1.8`
        * @see https://github.com/tuono-labs/tuono/issues/218
        */
       MessageChannel: ['tuono/ssr', 'MessageChannelPolyfill'],
@@ -69,9 +69,13 @@ function createBaseViteConfigFromTuonoConfig(
        * seem broken.
        */
       // @ts-expect-error see above comment
-      react({ include: pluginFilesInclude }),
+      solid({
+        include: pluginFilesInclude,
+        // ssr: true,
+        // solid: { hydratable: true },
+      }),
 
-      TuonoReactPlugin(),
+      TuonoPlugin(),
     ],
   }
 
@@ -183,7 +187,7 @@ const buildProd = (): void => {
             },
           },
           ssr: {
-            target: 'webworker',
+            target: 'node',
             noExternal: true,
           },
         },
@@ -217,4 +221,4 @@ const buildConfig = (): void => {
   })
 }
 
-export { buildProd, buildConfig, developmentCSRWatch, developmentSSRBundle }
+export { buildConfig, buildProd, developmentCSRWatch, developmentSSRBundle }

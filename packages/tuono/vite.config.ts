@@ -1,8 +1,8 @@
 /// <reference types="vitest" />
 /// <reference types="vite/client" />
-import { defineConfig, mergeConfig } from 'vitest/config'
 import { defineViteConfig } from 'vite-config'
-import react from '@vitejs/plugin-react-swc'
+import solid from 'vite-plugin-solid'
+import { defineConfig, mergeConfig } from 'vitest/config'
 
 export default mergeConfig(
   defineConfig({
@@ -11,7 +11,9 @@ export default mergeConfig(
      * @see https://github.com/tuono-labs/tuono/pull/607#discussion_r1983979427
      */
     build: { target: 'es2022' },
-    plugins: [react()],
+    plugins: [solid(
+      // { ssr: true, solid: { hydratable: true } }
+    )],
 
     test: {
       typecheck: {

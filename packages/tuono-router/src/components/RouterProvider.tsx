@@ -1,10 +1,10 @@
-import type { JSX } from 'react'
+import type { JSX } from 'solid-js'
 
-import type { ServerInitialLocation, Mode } from '../types'
 import type { Router } from '../router'
+import type { Mode, ServerInitialLocation } from '../types'
 
-import { RouterContextProvider } from './RouterContext'
 import { Matches } from './Matches'
+import { RouterContextProvider } from './RouterContext'
 
 interface RouterProviderProps {
   router: Router

@@ -1,4 +1,4 @@
-import type { JSX } from 'react'
+import type { JSX } from 'solid-js'
 
 import type { Mode } from '../types'
 

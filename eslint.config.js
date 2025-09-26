@@ -4,8 +4,8 @@ import tseslint from 'typescript-eslint'
 import eslintPluginImport from 'eslint-plugin-import'
 import eslintPluginReact from 'eslint-plugin-react'
 // @ts-expect-error no types are available for this plugin
-import eslintPluginReactHooks from 'eslint-plugin-react-hooks'
 import eslintPluginVitest from '@vitest/eslint-plugin'
+import eslintPluginReactHooks from 'eslint-plugin-react-hooks'
 
 const JS_EXTENSIONS_MATCH = [
   'js',
@@ -31,7 +31,7 @@ const tuonoEslintConfig = tseslint.config(
       // #endregion shared
 
       // #region package-specific
-      'packages/tuono-react-vite-plugin/tests/generator/**',
+      'packages/tuono-vite-plugin/tests/generator/**',
 
       'packages/tuono-lazy-fn-vite-plugin/tests/sources/**',
 

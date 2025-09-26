@@ -1,5 +1,3 @@
-import { useCallback } from 'react'
-
 import { useRouterContext } from '../components/RouterContext'
 
 type NavigationType = 'pushState' | 'replaceState'
@@ -38,46 +36,53 @@ interface UseRouterResult {
 export const useRouter = (): UseRouterResult => {
   const { location, updateLocation } = useRouterContext()
 
-  const navigate = useCallback(
-    (type: NavigationType, path: string, opts?: NavigationOptions): void => {
-      const { scroll = true } = opts || {}
-      const url = new URL(path, window.location.origin)
+  const navigate = (
+    type: NavigationType,
+    path: string,
+    opts?: NavigationOptions,
+  ): void => {
+    const { scroll = true } = opts || {}
+    const url = new URL(path, window.location.origin)
 
-      updateLocation({
-        href: url.href,
-        pathname: url.pathname,
-        search: Object.fromEntries(url.searchParams),
-        searchStr: url.search,
-        hash: url.hash,
-      })
+    updateLocation({
+      href: url.href,
+      pathname: url.pathname,
+      search: Object.fromEntries(url.searchParams),
+      searchStr: url.search,
+      hash: url.hash,
+    })
 
-      history[type](path, '', path)
+    history[type](path, '', path)
 
-      if (scroll) {
-        window.scroll(0, 0)
-      }
-    },
-    [updateLocation],
-  )
+    if (scroll) {
+      window.scroll(0, 0)
+    }
+  }
 
-  const push = useCallback(
-    (path: string, opts?: NavigationOptions): void => {
-      navigate('pushState', path, opts)
-    },
-    [navigate],
-  )
+  const push = (path: string, opts?: NavigationOptions): void => {
+    navigate('pushState', path, opts)
+  }
 
-  const replace = useCallback(
-    (path: string, opts?: NavigationOptions): void => {
-      navigate('replaceState', path, opts)
-    },
-    [navigate],
-  )
+  const replace = (path: string, opts?: NavigationOptions): void => {
+    navigate('replaceState', path, opts)
+  }
 
   return {
-    push,
-    replace,
-    query: location.search,
-    pathname: location.pathname,
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    get push() {
+      return push
+    },
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    get replace() {
+      return replace
+    },
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    get query() {
+      return location().search
+    },
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    get pathname() {
+      return location().pathname
+    },
   }
 }

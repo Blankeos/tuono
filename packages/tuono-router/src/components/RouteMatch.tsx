@@ -1,13 +1,15 @@
-import type { JSX } from 'react'
-import { memo, Suspense, useMemo } from 'react'
+import type { JSX } from 'solid-js'
+import { Show, Suspense, createMemo } from 'solid-js'
 
-import type { Mode } from '../types'
+import { Dynamic } from 'solid-js/web'
+
 import type { Route } from '../route'
+import type { Mode } from '../types'
 
 import { useServerPayloadData } from '../hooks/useServerPayloadData'
 
-import { useRouterContext } from './RouterContext'
 import { CriticalCss } from './CriticalCss'
+import { useRouterContext } from './RouterContext'
 
 interface RouteMatchProps<TServerPayloadData = unknown> {
   route: Route
@@ -21,29 +23,34 @@ interface RouteMatchProps<TServerPayloadData = unknown> {
  *
  * It handles the fetch of the client side resources
  */
-export const RouteMatch = ({
-  route,
-  serverInitialData,
-  mode,
-}: RouteMatchProps): JSX.Element => {
-  const { data } = useServerPayloadData(route, serverInitialData)
+export const RouteMatch = (props: RouteMatchProps): JSX.Element => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = useServerPayloadData<() => any>(
+    props.route,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+    props.serverInitialData as any,
+  )
   const { isTransitioning } = useRouterContext()
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const routes = useMemo(() => loadParentComponents(route), [route.id])
+  const routes = createMemo(() => loadParentComponents(props.route))
 
-  const routeData = isTransitioning ? null : data
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  const routeData = () => (isTransitioning() ? null : data)
 
   return (
     <TraverseRootComponents
-      routes={routes}
-      data={routeData}
-      isLoading={isTransitioning}
-      mode={mode}
+      routes={routes()}
+      data={routeData()}
+      isLoading={isTransitioning()}
+      mode={props.mode}
     >
       <Suspense>
-        <CriticalCss routeFilePath={route.filePath} mode={mode} />
-        <route.component data={routeData} isLoading={isTransitioning} />
+        <CriticalCss routeFilePath={props.route.filePath} mode={props.mode} />
+        <Dynamic
+          component={props.route.component}
+          data={routeData()}
+          isLoading={isTransitioning()}
+        />
       </Suspense>
     </TraverseRootComponents>
   )
@@ -53,7 +60,7 @@ interface TraverseRootComponentsProps<TData = unknown> {
   routes: Array<Route>
   data: TData
   isLoading: boolean
-  children?: React.ReactNode
+  children?: JSX.Element
   index?: number
   mode?: Mode
 }
@@ -61,46 +68,46 @@ interface TraverseRootComponentsProps<TData = unknown> {
 /**
  * This component traverses and renders all components
  * that wrap the selected route (__layout).
- * Parent components must be memoized
- * to prevent re-rendering issues when the route changes.
  */
-const TraverseRootComponents = memo(
-  ({
-    routes,
-    data,
-    isLoading,
-    index = 0,
-    mode,
-    children,
-  }: TraverseRootComponentsProps): React.JSX.Element => {
-    if (routes.length > index) {
-      const route = routes[index] as Route
-      const Parent = route.component
+const TraverseRootComponents = (
+  props: TraverseRootComponentsProps,
+): JSX.Element => {
+  return (
+    <Show
+      when={props.routes.length > (props.index || 0)}
+      fallback={<>{props.children}</>}
+    >
+      {/*@ts-expect-error this is fine*/}
+      {() => {
+        const route = props.routes[props.index || 0] as Route
+        const Parent = route.component
 
-      // Fallback to the route id if the filePath is not defined
-      // as is the case for the root route
-      const routeFilePath = route.filePath || route.id
+        // Fallback to the route id if the filePath is not defined
+        // as is the case for the root route
+        const routeFilePath = route.filePath || route.id
 
-      return (
-        <Parent data={data} isLoading={isLoading}>
-          <CriticalCss routeFilePath={routeFilePath} mode={mode} />
-          <TraverseRootComponents
-            routes={routes}
-            data={data}
-            isLoading={isLoading}
-            index={index + 1}
-            mode={mode}
+        return (
+          <Dynamic
+            component={Parent}
+            data={props.data}
+            isLoading={props.isLoading}
           >
-            {children}
-          </TraverseRootComponents>
-        </Parent>
-      )
-    }
-
-    return <>{children}</>
-  },
-)
-TraverseRootComponents.displayName = 'TraverseRootComponents'
+            <CriticalCss routeFilePath={routeFilePath} mode={props.mode} />
+            <TraverseRootComponents
+              routes={props.routes}
+              data={props.data}
+              isLoading={props.isLoading}
+              index={(props.index || 0) + 1}
+              mode={props.mode}
+            >
+              {props.children}
+            </TraverseRootComponents>
+          </Dynamic>
+        )
+      }}
+    </Show>
+  )
+}
 
 const loadParentComponents = (
   route: Route,

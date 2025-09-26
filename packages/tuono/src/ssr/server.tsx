@@ -39,16 +39,17 @@ import { MessageChannelPolyfill } from './polyfills/MessageChannel'
 /* eslint-enable import/order, import/newline-after-import */
 // #endregion POLYFILLS
 
-import type { ReadableStream } from 'node:stream/web'
+// import type { ReadableStream } from 'node:stream/web'
 
-import { renderToReadableStream } from 'react-dom/server'
-import { createRouter } from 'tuono-router'
 import type { createRoute } from 'tuono-router'
+import { createRouter } from 'tuono-router'
+
+import { renderToString, renderToStringAsync } from 'solid-js/web'
 
 import { TuonoEntryPoint } from '../shared/TuonoEntryPoint'
 import type { ServerPayload } from '../types'
 
-import { streamToString } from './utils'
+// import { streamToString } from './utils'
 
 type RouteTree = ReturnType<typeof createRoute>
 
@@ -58,15 +59,32 @@ export function serverSideRendering(routeTree: RouteTree) {
 
     const router = createRouter({ routeTree }) // Render the app
 
-    const stream = await renderToReadableStream(
-      <TuonoEntryPoint router={router} serverPayload={serverPayload} />,
-    )
+    // Use renderToStringAsync instead of renderToStream
+    let html = await renderToStringAsync(() => (
+      <TuonoEntryPoint router={router} serverPayload={serverPayload} />
+    ))
 
-    await stream.allReady
+    if (!html)
+      html = renderToString(() => (
+        <div>
+          <span>Router exists: {router ? 'yes' : 'no'}</span>
+          <span>ServerPayload: {JSON.stringify(serverPayload)}</span>
+        </div>
+      ))
 
-    return await streamToString(
-      // ReadableStream should be implemented in node)
-      stream as unknown as ReadableStream<Uint8Array>,
-    )
+    if (!html) {
+      return `<div>WHAT</div>`
+    }
+
+    return html
+
+    // const stream = renderToStream(() => (
+    //   <TuonoEntryPoint router={router} serverPayload={serverPayload} />
+    // ))
+
+    // return await streamToString(
+    //   // ReadableStream should be implemented in node)
+    //   stream as unknown as ReadableStream<Uint8Array>,
+    // )
   }
 }

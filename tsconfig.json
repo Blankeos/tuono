@@ -34,6 +34,10 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
 
     // Completeness
-    "skipLibCheck": true
+    "skipLibCheck": true,
+
+    // JSX configuration for SolidJS
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js"
   }
 }

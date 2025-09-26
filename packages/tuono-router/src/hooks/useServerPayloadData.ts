@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { createEffect, createSignal, onCleanup } from 'solid-js'
 
 import type { Route } from '../route'
 import { fromUrlToParsedLocation } from '../utils/from-url-to-parsed-location'
@@ -33,18 +33,22 @@ export function useServerPayloadData<TServerPayloadData>(
   // User defined data
   serverInitialData: TServerPayloadData,
 ): UseServerPayloadDataResult<TServerPayloadData> {
-  const isFirstRendering = useRef<boolean>(true)
+  let isFirstRendering = true
   const { location, updateLocation, stopTransitioning } = useRouterContext()
 
-  const [data, setData] = useState<TServerPayloadData | undefined>(
+  const [data, setData] = createSignal<TServerPayloadData | undefined>(
     serverInitialData,
   )
 
-  useEffect(() => {
+  createEffect(() => {
+    // Unused so createEffect treats it as a dependency
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _dep = location().pathname
+
     // First loading just dehydrate since the
     // props are already bundled by the SSR
-    if (isFirstRendering.current) {
-      isFirstRendering.current = false
+    if (isFirstRendering) {
+      isFirstRendering = false
       stopTransitioning()
       return
     }
@@ -69,7 +73,7 @@ export function useServerPayloadData<TServerPayloadData>(
             updateLocation(parsedLocation)
             return
           }
-          setData(response.data as TServerPayloadData)
+          setData(() => response.data as TServerPayloadData)
         } catch (error) {
           throw Error('Failed loading Server Side Data', { cause: error })
         } finally {
@@ -81,15 +85,48 @@ export function useServerPayloadData<TServerPayloadData>(
     }
 
     // Clean up the data when changing route
-    return (): void => {
+    onCleanup(() => {
       setData(undefined)
-    }
-  }, [
-    location.pathname,
-    route.options.hasHandler,
-    updateLocation,
-    stopTransitioning,
-  ])
+    })
+  })
 
+  // Bad
+  // createEffect(() => {
+  //   const pathname = location().pathname
+
+  //   // Skip first rendering as it's handled by onMount
+  //   if (isFirstRendering) return
+
+  //   if (route.options.hasHandler) {
+  //     // The error management is already handled inside the IIFE
+  //     // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  //     ;(async (): Promise<void> => {
+  //       try {
+  //         const response = await fetchClientSideData()
+  //         if (response.info.redirect_destination) {
+  //           const parsedLocation = fromUrlToParsedLocation(
+  //             response.info.redirect_destination,
+  //           )
+
+  //           history.pushState(
+  //             parsedLocation.pathname,
+  //             '',
+  //             parsedLocation.pathname,
+  //           )
+
+  //           updateLocation(parsedLocation)
+  //           return
+  //         }
+  //         setData(() => response.data as TServerPayloadData)
+  //       } catch (error) {
+  //         throw Error('Failed loading Server Side Data', { cause: error })
+  //       } finally {
+  //         stopTransitioning()
+  //       }
+  //     })()
+  //   } else {
+  //     stopTransitioning()
+  //   }
+  // })
   return { data: data as TServerPayloadData }
 }
